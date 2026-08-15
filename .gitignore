@@ -1,0 +1,17 @@
+# Godot 4+
+.godot/
+/android/
+
+# Exports / builds
+builds/
+exports/
+*.exe
+*.apk
+*.aab
+*.zip
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
