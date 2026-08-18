@@ -6,6 +6,8 @@ var score := 0
 var best := 0
 var touch_start := Vector2.ZERO
 var rng := RandomNumberGenerator.new()
+var game_over := false
+var won := false
 
 func _ready() -> void:
     rng.randomize()
@@ -18,6 +20,8 @@ func new_game() -> void:
     for y in SIZE:
         board.append([0, 0, 0, 0])
     score = 0
+    game_over = false
+    won = false
     spawn_tile()
     spawn_tile()
     queue_redraw()
@@ -41,6 +45,8 @@ func compress(line: Array) -> Array:
             var merged: int = values[i] * 2
             result.append(merged)
             score += merged
+            if merged >= 2048:
+                won = true
             i += 2
         else:
             result.append(values[i])
@@ -49,6 +55,7 @@ func compress(line: Array) -> Array:
     return result
 
 func move(dir: Vector2i) -> void:
+    if game_over: return
     var old := str(board)
     if dir.x != 0:
         for y in SIZE:
@@ -70,18 +77,37 @@ func move(dir: Vector2i) -> void:
         if score > best:
             best = score
             save_value("best", best)
+        game_over = not has_moves()
         queue_redraw()
+
+func has_moves() -> bool:
+    for y in SIZE:
+        for x in SIZE:
+            if board[y][x] == 0:
+                return true
+            if x + 1 < SIZE and board[y][x] == board[y][x + 1]:
+                return true
+            if y + 1 < SIZE and board[y][x] == board[y + 1][x]:
+                return true
+    return false
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed:
+        if event.keycode == KEY_R:
+            new_game()
+            return
+        if game_over: return
         match event.keycode:
             KEY_LEFT, KEY_A: move(Vector2i.LEFT)
             KEY_RIGHT, KEY_D: move(Vector2i.RIGHT)
             KEY_UP, KEY_W: move(Vector2i.UP)
             KEY_DOWN, KEY_S: move(Vector2i.DOWN)
-            KEY_R: new_game()
     elif event is InputEventScreenTouch:
-        if event.pressed: touch_start = event.position
+        if event.pressed:
+            if game_over:
+                new_game()
+                return
+            touch_start = event.position
         else:
             var delta := event.position - touch_start
             if delta.length() > 40.0:
@@ -110,6 +136,12 @@ func _draw() -> void:
                 var text_size := ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
                 draw_string(ThemeDB.fallback_font, rect.position + (rect.size - text_size) / 2.0 + Vector2(0, text_size.y * 0.78), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color.WHITE)
     draw_string(ThemeDB.fallback_font, Vector2(40, origin.y + grid_w + 70), "Swipe / arrows • R = restart", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("747f99"))
+    if won:
+        draw_string(ThemeDB.fallback_font, Vector2(40, origin.y + grid_w + 115), "2048 reached! Keep going.", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("7ddcff"))
+    if game_over:
+        draw_rect(Rect2(95, 500, 530, 180), Color(0.03, 0.04, 0.07, 0.95), true)
+        draw_string(ThemeDB.fallback_font, Vector2(225, 565), "NO MORE MOVES", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color.WHITE)
+        draw_string(ThemeDB.fallback_font, Vector2(185, 620), "Tap or R to restart", HORIZONTAL_ALIGNMENT_LEFT, -1, 23, Color("7ddcff"))
 
 func save_value(key: String, value: Variant) -> void:
     var cfg := ConfigFile.new()
