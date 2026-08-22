@@ -18,14 +18,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Export Adventure for Web
-        uses: firebelley/godot-export@v6.0.0
-        with:
-          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
-          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          relative_project_path: ./08_adventure
-          archive_output: true
-          cache: true
+      - name: Install Godot 4.3 and export templates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          sudo install -m 0755 /tmp/godot/Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/templates
+          cp -R /tmp/templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
+          godot --version
+
+      - name: Validate Adventure project
+        shell: bash
+        run: |
+          set -euxo pipefail
+          godot --headless --path 08_adventure --editor --quit
+
+      - name: Export Adventure Web
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p 08_adventure/build/web
+          godot --headless --path 08_adventure --export-release Web build/web/index.html
+          test -f 08_adventure/build/web/index.html
 
       - name: Upload Adventure web build
         uses: actions/upload-artifact@v4
