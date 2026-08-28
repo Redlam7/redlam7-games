@@ -29,7 +29,9 @@ func _ready()->void:
 func _process(delta:float)->void:
  if finished or dead:return
  elapsed+=delta
- var dir:=Input.get_axis("ui_left","ui_right")
+ var dir:=0.0
+ if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_Q):dir-=1.0
+ if Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):dir+=1.0
  if abs(touch_dir)>0.01:dir=touch_dir
  player_vel.x=dir*speed
  if Input.is_action_just_pressed("ui_accept") and on_ground():player_vel.y=-jump_power
@@ -67,7 +69,7 @@ func restart()->void:
 func _unhandled_input(event:InputEvent)->void:
  if event is InputEventKey and event.pressed:
   if event.keycode==KEY_R:restart()
-  elif (event.keycode==KEY_SPACE or event.keycode==KEY_UP or event.keycode==KEY_W) and on_ground():player_vel.y=-jump_power
+  elif (event.keycode==KEY_SPACE or event.keycode==KEY_UP or event.keycode==KEY_W or event.keycode==KEY_Z) and on_ground():player_vel.y=-jump_power
  elif event is InputEventScreenTouch:
   if event.pressed:
    if finished or dead:restart()
@@ -83,6 +85,7 @@ func _draw()->void:
  draw_rect(Rect2(0,0,W,H),Color("0f1620"));draw_rect(Rect2(0,GROUND_Y,W,H-GROUND_Y),Color("263448"))
  draw_string(ThemeDB.fallback_font,Vector2(28,44),"REDLAM7 // ADVENTURE",0,-1,30,Color.WHITE)
  draw_string(ThemeDB.fallback_font,Vector2(28,78),"RELICS %d/4   HP %d   SCORE %d   BEST %d"%[collected,health,score,best],0,-1,18,Color("9fc7d8"))
+ draw_string(ThemeDB.fallback_font,Vector2(28,108),"MOVE: arrows / QD / AD   JUMP: Space / Z / W / Up",0,-1,15,Color("718fa0"))
  draw_rect(Rect2(860,360,55,110),Color("3c596e"),true);draw_rect(Rect2(875,330,25,30),Color("69d2e7"),true)
  if checkpoint_active:
   draw_line(Vector2(470,GROUND_Y),Vector2(470,390),Color("69d2e7"),4);draw_polygon(PackedVector2Array([Vector2(470,390),Vector2(520,405),Vector2(470,420)]),PackedColorArray([Color("69d2e7")]))
