@@ -15,6 +15,7 @@ var target:=1200
 var stage:=1
 var combo:=0
 var last_cascade:=0
+var crowns:=0
 var game_over:=false
 var won:=false
 var rng:=RandomNumberGenerator.new()
@@ -90,7 +91,12 @@ func resolve_board(matches:Array[int])->void:
  while not matches.is_empty():
   last_cascade=cascade;combo=max(combo,cascade)
   score+=matches.size()*25*cascade
-  if matches.size()>=4:score+=50*matches.size()
+  if matches.size()>=4:
+   score+=50*matches.size();crowns+=1
+   if crowns%3==0:moves+=1
+  if cascade>=3:
+   crowns+=1
+   if crowns%3==0:moves+=1
   for idx in matches:board[idx]=-1
   for c in range(COLS):
    var values:Array[int]=[]
@@ -106,7 +112,7 @@ func next_stage()->void:
  stage+=1;target+=800+stage*250;moves=22+min(stage,5);selected=-1;combo=0;last_cascade=0;game_over=false;won=false;new_board();queue_redraw()
 
 func restart()->void:
- score=0;moves=24;target=1200;stage=1;selected=-1;combo=0;last_cascade=0;game_over=false;won=false;new_board();queue_redraw()
+ score=0;moves=24;target=1200;stage=1;selected=-1;combo=0;last_cascade=0;crowns=0;game_over=false;won=false;new_board();queue_redraw()
 
 func _unhandled_input(event:InputEvent)->void:
  if event is InputEventMouseButton and event.pressed:
@@ -130,8 +136,9 @@ func _draw()->void:
  draw_rect(Rect2(0,0,W,H),Color("100c19"))
  draw_string(ThemeDB.fallback_font,Vector2(42,65),"REDLAM7 // ROYAL",0,-1,34,Color("f3df9a"))
  draw_string(ThemeDB.fallback_font,Vector2(42,108),"STAGE %d   SCORE %d / %d"%[stage,score,target],0,-1,21,Color("c9bfd8"))
- draw_string(ThemeDB.fallback_font,Vector2(42,145),"MOVES %d   BEST %d"%[moves,best],0,-1,19,Color("8f84a5"))
- if last_cascade>=2:draw_string(ThemeDB.fallback_font,Vector2(265,205),"ROYAL CASCADE x%d"%last_cascade,0,-1,20,Color("f3df9a"))
+ draw_string(ThemeDB.fallback_font,Vector2(42,145),"MOVES %d   BEST %d   CROWNS %d"%[moves,best,crowns],0,-1,18,Color("8f84a5"))
+ draw_string(ThemeDB.fallback_font,Vector2(42,180),"Every 3 crowns: +1 move",0,-1,17,Color("b9a9cc"))
+ if last_cascade>=2:draw_string(ThemeDB.fallback_font,Vector2(265,220),"ROYAL CASCADE x%d"%last_cascade,0,-1,20,Color("f3df9a"))
  for r in range(ROWS):
   for c in range(COLS):
    var idx:=r*COLS+c;var rect:=Rect2(ORIGIN+Vector2(c*CELL,r*CELL),Vector2(CELL-8,CELL-8));draw_rect(rect,Color("21182f"),true);var center:=rect.get_center();draw_circle(center,31,gem_color(board[idx]));draw_circle(center,19,gem_color(board[idx]).lightened(.12));
