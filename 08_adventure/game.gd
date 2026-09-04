@@ -24,6 +24,7 @@ var finished:=false
 var dead:=false
 var touch_dir:=0.0
 var grounded:=true
+var level:=1
 
 func _ready()->void:
  best=load_best();restart()
@@ -73,26 +74,38 @@ func restart()->void:
  for r in RELICS_START:relics.append(r)
  collected=0;checkpoint=START;checkpoint_active=false;health=3;score=0;elapsed=0.0;finished=false;dead=false;touch_dir=0.0;grounded=true;queue_redraw()
 
+func next_level()->void:
+ level+=1
+ speed=min(300.0,220.0+(level-1)*10.0)
+ jump_power=min(470.0,430.0+(level-1)*4.0)
+ restart()
+
+func validate_end()->void:
+ if finished:next_level()
+ elif dead:restart()
+
 func _unhandled_input(event:InputEvent)->void:
  if event is InputEventKey and event.pressed:
   if event.keycode==KEY_R:restart()
+  elif (event.keycode==KEY_ENTER or event.keycode==KEY_KP_ENTER) and (finished or dead):validate_end()
+  elif (event.keycode==KEY_SPACE or event.keycode==KEY_UP or event.keycode==KEY_W or event.keycode==KEY_Z) and finished:validate_end()
   elif (event.keycode==KEY_SPACE or event.keycode==KEY_UP or event.keycode==KEY_W or event.keycode==KEY_Z) and on_ground():player_vel.y=-jump_power;grounded=false
  elif event is InputEventScreenTouch:
   if event.pressed:
-   if finished or dead:restart()
+   if finished or dead:validate_end()
    elif event.position.y<H*.52 and on_ground():player_vel.y=-jump_power;grounded=false
    elif event.position.x<W*.5:touch_dir=-1.0
    else:touch_dir=1.0
   else:touch_dir=0.0
  elif event is InputEventScreenDrag:touch_dir=clamp(event.relative.x/12.0,-1.0,1.0)
- elif event is InputEventMouseButton and event.pressed and (finished or dead):restart()
+ elif event is InputEventMouseButton and event.pressed and (finished or dead):validate_end()
 
 func _draw()->void:
  draw_rect(Rect2(0,0,W,H),Color("0b1720"));draw_rect(Rect2(0,GROUND_Y,W,H-GROUND_Y),Color("253747"))
  draw_circle(Vector2(780,100),55,Color("183b4c"));draw_circle(Vector2(780,100),38,Color("d9b85a"))
  for x in range(0,960,80):draw_polygon(PackedVector2Array([Vector2(x,GROUND_Y),Vector2(x+55,310+(x%160)),Vector2(x+120,GROUND_Y)]),PackedColorArray([Color("142936")]))
  draw_string(ThemeDB.fallback_font,Vector2(28,44),"REDLAM7 // ADVENTURE",0,-1,30,Color.WHITE)
- draw_string(ThemeDB.fallback_font,Vector2(28,78),"RELICS %d/4   HP %d   SCORE %d   BEST %d"%[collected,health,score,best],0,-1,18,Color("9fc7d8"))
+ draw_string(ThemeDB.fallback_font,Vector2(28,78),"LEVEL %d   RELICS %d/4   HP %d   SCORE %d   BEST %d"%[level,collected,health,score,best],0,-1,18,Color("9fc7d8"))
  draw_string(ThemeDB.fallback_font,Vector2(28,108),"MOVE: arrows / QD / AD   JUMP: Space / Z / W / Up",0,-1,15,Color("718fa0"))
  for p in platforms:
   draw_rect(p,Color("426070"),true);draw_line(p.position,p.position+Vector2(p.size.x,0),Color("76b6c8"),3)
@@ -104,7 +117,7 @@ func _draw()->void:
   draw_polygon(PackedVector2Array([Vector2(h.position.x,h.end.y),Vector2(h.position.x+12,h.position.y),Vector2(h.position.x+24,h.end.y),Vector2(h.position.x+36,h.position.y),Vector2(h.end.x,h.end.y)]),PackedColorArray([Color("b34b4b")]))
  draw_rect(Rect2(player_pos.x-14,player_pos.y-34,28,34),Color("55c0da"),true);draw_circle(player_pos+Vector2(0,-42),10,Color("d7e8ec"));draw_line(player_pos+Vector2(-8,-20),player_pos+Vector2(-17,0),Color("d7e8ec"),4);draw_line(player_pos+Vector2(8,-20),player_pos+Vector2(17,0),Color("d7e8ec"),4)
  if finished or dead:
-  draw_rect(Rect2(220,165,520,185),Color(0.03,0.04,0.07,.95),true);var title:="LEVEL CLEAR" if finished else "ADVENTURE OVER";draw_string(ThemeDB.fallback_font,Vector2(330,225),title,0,-1,36,Color.WHITE);draw_string(ThemeDB.fallback_font,Vector2(330,270),"Relics %d/4   Score %d"%[collected,score],0,-1,22,Color("71d6ee"));draw_string(ThemeDB.fallback_font,Vector2(335,315),"Tap or R to restart",0,-1,20,Color("9fc7d8"))
+  draw_rect(Rect2(220,155,520,205),Color(0.03,0.04,0.07,.95),true);var title:="LEVEL CLEAR" if finished else "ADVENTURE OVER";draw_string(ThemeDB.fallback_font,Vector2(330,215),title,0,-1,36,Color.WHITE);draw_string(ThemeDB.fallback_font,Vector2(330,260),"Relics %d/4   Score %d"%[collected,score],0,-1,22,Color("71d6ee"));var hint:="ENTER / SPACE / Tap: next level" if finished else "ENTER / Tap: retry";draw_string(ThemeDB.fallback_font,Vector2(300,315),hint,0,-1,20,Color("9fc7d8"))
 
 func save_best()->void:
  var c:=ConfigFile.new();c.set_value("score","best",best);c.save("user://adventure.cfg")
