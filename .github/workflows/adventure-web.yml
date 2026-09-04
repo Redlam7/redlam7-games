@@ -1,10 +1,11 @@
-name: Adventure Web Build
+name: WilBird Games Web Build
 
 on:
   push:
     branches: [main]
     paths:
       - '08_adventure/**'
+      - '11_tower/**'
       - '.github/workflows/adventure-web.yml'
   workflow_dispatch:
 
@@ -40,25 +41,32 @@ jobs:
           cp -R /tmp/templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
           godot --version
 
-      - name: Validate Adventure project
+      - name: Validate games
         shell: bash
         run: |
           set -euxo pipefail
           godot --headless --path 08_adventure --editor --quit
+          godot --headless --path 11_tower --editor --quit
 
-      - name: Export Adventure Web
+      - name: Export games Web
         shell: bash
         run: |
           set -euxo pipefail
-          mkdir -p 08_adventure/build/web
+          rm -rf site
+          mkdir -p site/tower
+          mkdir -p 08_adventure/build/web 11_tower/build/web
           godot --headless --path 08_adventure --export-release Web build/web/index.html
-          test -f 08_adventure/build/web/index.html
+          godot --headless --path 11_tower --export-release Web build/web/index.html
+          cp -R 08_adventure/build/web/. site/
+          cp -R 11_tower/build/web/. site/tower/
+          test -f site/index.html
+          test -f site/tower/index.html
 
-      - name: Upload downloadable build
+      - name: Upload downloadable Tower build
         uses: actions/upload-artifact@v4
         with:
-          name: redlam7-adventure-web
-          path: 08_adventure/build/web
+          name: redlam7-tower-web
+          path: 11_tower/build/web
           if-no-files-found: error
 
       - name: Configure GitHub Pages
@@ -67,8 +75,8 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 08_adventure/build/web
+          path: site
 
-      - name: Deploy Adventure to GitHub Pages
+      - name: Deploy WilBird games to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
